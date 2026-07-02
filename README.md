@@ -1,20 +1,14 @@
-# Viral Radar v21
+# Viral Radar v22
 
 ## 변경 사항
-- YouTube API 실제 검색 연결 추가
-- API 키는 코드에 포함하지 않음
-- 저장 버튼으로 입력한 키만 localStorage에서 사용
-- Demo ON: 기존 샘플 데이터 사용
-- Demo OFF: 실제 YouTube Data API 검색 사용
 
-## 테스트 순서
-1. 브라우저에서 사이트 열기
-2. API 키 입력 후 저장
-3. Demo OFF로 전환
-4. 검색 탭에서 키워드 검색
-5. 결과 표가 실제 영상으로 뜨는지 확인
+- 실제 YouTube API 검색 결과의 AI 점수 계산식을 개선했습니다.
+- YouTube duration 값을 초 단위로 통일했습니다.
+- 검색 결과에서 뉴스성/스팸성 잡음을 제외하는 옵션을 추가했습니다.
+- 검색 정렬 옵션을 추가했습니다: 최신순, 조회수순, 관련도순.
+- 썸네일 우선순위를 maxres > standard > high > medium > default 순서로 개선했습니다.
+- 영상 상세 Drawer에 AI 분석과 YouTube 바로가기 버튼을 강화했습니다.
 
-## 커밋명
-```
-v21 - YouTube API 검색 연결
-```
+## API 키 정책
+
+API 키는 코드에 포함하지 않습니다. 입력창에 저장한 키만 localStorage에서 사용합니다.

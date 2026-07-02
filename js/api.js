@@ -1,13 +1,13 @@
 // YouTube Data API helpers - API key is read only from localStorage/input, never hard-coded.
-const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
+const YOUTUBE_API_BASE = 'https://www.googleapis.com/youtube/v3';
 
 function regionCode(country) {
-  if (!country || country === "GLOBAL") return "";
+  if (!country || country === 'GLOBAL') return '';
   return country;
 }
 
 function parseDurationSeconds(isoDuration) {
-  const match = String(isoDuration || "").match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  const match = String(isoDuration || '').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return 0;
   const hours = Number(match[1] || 0);
   const minutes = Number(match[2] || 0);
@@ -21,13 +21,46 @@ function hoursSince(publishedAt) {
   return Math.max(1, Math.round((Date.now() - published) / 36e5));
 }
 
+function bestThumbnail(thumbnails = {}) {
+  return (
+    thumbnails.maxres?.url ||
+    thumbnails.standard?.url ||
+    thumbnails.high?.url ||
+    thumbnails.medium?.url ||
+    thumbnails.default?.url ||
+    ''
+  );
+}
+
+function estimateChannelAverage(views, subs, durationSeconds) {
+  // YouTube API does not expose channel average views in one cheap call.
+  // This proxy is deliberately conservative: subscriber base + current result scale.
+  const isShort = durationSeconds > 0 && durationSeconds <= 60;
+  const subBaseline = subs ? subs * (isShort ? 0.18 : 0.08) : 1000;
+  const viewBaseline = views ? views * 0.22 : 1000;
+  return Math.max(500, Math.round(Math.max(subBaseline, viewBaseline)));
+}
+
+function isLikelyNoiseVideo(video, query = '') {
+  const q = String(query || '').toLowerCase();
+  const text = `${video.title || ''} ${video.channel || ''}`.toLowerCase();
+  const newsLike = /뉴스|속보|기자|브리핑|정치|사건|사고|신문|news|knn|ytn|sbs|mbc|kbs|jtbc|연합뉴스/.test(text);
+  const userWantsNews = /뉴스|news|속보|사건|정치/.test(q);
+  if (newsLike && !userWantsNews) return true;
+
+  const spamLike = /#.{40,}|먹튀|바카라|카지노|성인|19금|대출|토토/.test(text);
+  if (spamLike) return true;
+
+  return false;
+}
+
 async function youtubeFetch(path, params = {}) {
-  const key = (API || localStorage.getItem("vr_api_key") || "").trim();
-  if (!key) throw new Error("API_KEY_REQUIRED");
+  const key = (API || localStorage.getItem('vr_api_key') || '').trim();
+  if (!key) throw new Error('API_KEY_REQUIRED');
 
   const url = new URL(`${YOUTUBE_API_BASE}/${path}`);
   Object.entries({ ...params, key }).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, v);
+    if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
   });
 
   const res = await fetch(url.toString());
@@ -40,18 +73,19 @@ async function youtubeFetch(path, params = {}) {
   return data;
 }
 
-async function searchYouTubeVideos(query, country = "GLOBAL", includeShorts = true) {
-  const q = String(query || "").trim();
+async function searchYouTubeVideos(query, country = 'GLOBAL', includeShorts = true, options = {}) {
+  const q = String(query || '').trim();
   if (!q) return [];
 
-  const searchData = await youtubeFetch("search", {
-    part: "snippet",
-    type: "video",
-    maxResults: 20,
+  const searchData = await youtubeFetch('search', {
+    part: 'snippet',
+    type: 'video',
+    maxResults: 35,
     q,
-    order: "date",
+    order: options.order || 'date',
     regionCode: regionCode(country),
-    safeSearch: "none",
+    safeSearch: 'none',
+    videoEmbeddable: 'any',
   });
 
   const videoIds = (searchData.items || [])
@@ -60,9 +94,9 @@ async function searchYouTubeVideos(query, country = "GLOBAL", includeShorts = tr
 
   if (!videoIds.length) return [];
 
-  const videosData = await youtubeFetch("videos", {
-    part: "snippet,statistics,contentDetails",
-    id: videoIds.join(","),
+  const videosData = await youtubeFetch('videos', {
+    part: 'snippet,statistics,contentDetails',
+    id: videoIds.join(','),
   });
 
   const channelIds = [
@@ -75,9 +109,9 @@ async function searchYouTubeVideos(query, country = "GLOBAL", includeShorts = tr
 
   let channelMap = {};
   if (channelIds.length) {
-    const channelData = await youtubeFetch("channels", {
-      part: "statistics",
-      id: channelIds.join(","),
+    const channelData = await youtubeFetch('channels', {
+      part: 'statistics',
+      id: channelIds.join(','),
     });
     channelMap = Object.fromEntries(
       (channelData.items || []).map((ch) => [
@@ -95,32 +129,28 @@ async function searchYouTubeVideos(query, country = "GLOBAL", includeShorts = tr
       const views = Number(stats.viewCount || 0);
       const subs = Number(channelMap[snippet.channelId] || 0);
       const hours = hoursSince(snippet.publishedAt);
-
-      // Channel average is not available from one API call. This is a conservative proxy
-      // so the existing outlier score can still rank real search results.
-      const avgProxy = Math.max(1000, Math.round(views / 8));
+      const avgProxy = estimateChannelAverage(views, subs, durationSeconds);
 
       return calc({
         id: item.id,
-        title: snippet.title || "제목 없음",
-        channel: snippet.channelTitle || "채널 없음",
+        title: snippet.title || '제목 없음',
+        channel: snippet.channelTitle || '채널 없음',
         subs,
         views,
         avg: avgProxy,
         hours,
         likes: Number(stats.likeCount || 0),
         comments: Number(stats.commentCount || 0),
-        duration: Math.max(1, Math.round(durationSeconds / 60)),
-        country: country === "GLOBAL" ? "GLOBAL" : country,
-        cat: "실제검색",
-        thumb:
-          snippet?.thumbnails?.high?.url ||
-          snippet?.thumbnails?.medium?.url ||
-          snippet?.thumbnails?.default?.url ||
-          "",
+        duration: durationSeconds,
+        country: country === 'GLOBAL' ? 'GLOBAL' : country,
+        cat: durationSeconds > 0 && durationSeconds <= 60 ? '실제검색 Shorts' : '실제검색',
+        thumb: bestThumbnail(snippet.thumbnails),
         url: `https://www.youtube.com/watch?v=${item.id}`,
+        publishedAt: snippet.publishedAt,
       });
     })
-    .filter((v) => includeShorts || v.duration > 1)
-    .sort((a, b) => b.score - a.score);
+    .filter((v) => includeShorts || v.duration > 60)
+    .filter((v) => !options.excludeNoise || !isLikelyNoiseVideo(v, q))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 20);
 }
