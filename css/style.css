@@ -560,3 +560,195 @@ body {
 }
 
 .cache-note{margin:10px 0 12px;color:var(--muted);font-size:12px;font-weight:800}
+
+
+/* v24 AI Trend Report */
+.trend-report {
+  margin: 14px 0 16px;
+}
+.trend-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.trend-head h2 {
+  margin: 0 0 5px;
+  font-size: 20px;
+}
+.trend-head p {
+  margin: 0;
+  color: var(--muted);
+}
+.trend-rating {
+  min-width: 150px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px;
+  text-align: right;
+}
+.trend-rating span,
+.trend-kpis span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+.trend-rating strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+  color: #f59e0b;
+  letter-spacing: 1px;
+}
+.trend-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.trend-kpis div {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px;
+}
+.trend-kpis strong {
+  display: block;
+  font-size: 22px;
+  margin-top: 4px;
+}
+.trend-kpis small {
+  display: block;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.trend-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.1fr;
+  gap: 12px;
+}
+.trend-box {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 14px;
+  padding: 13px;
+}
+.trend-box h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+.trend-box h3.mt {
+  margin-top: 14px;
+}
+.trend-bar-row {
+  display: grid;
+  grid-template-columns: 78px 1fr 28px;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+  font-size: 12px;
+}
+.trend-bar-row span {
+  font-weight: 900;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.trend-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #eef2f7;
+  overflow: hidden;
+}
+.trend-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #111;
+}
+.trend-pills {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.trend-pill {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 9px;
+  background: #f8fafc;
+}
+.trend-pill b,
+.trend-pill span {
+  display: block;
+}
+.trend-pill span {
+  color: var(--muted);
+  margin-top: 3px;
+}
+.trend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.trend-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding: 7px 0;
+}
+.trend-list li:last-child {
+  border-bottom: 0;
+}
+.trend-advice {
+  margin: 0;
+  color: #374151;
+  line-height: 1.6;
+}
+.trend-winner {
+  margin-top: 12px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.trend-winner span {
+  font-weight: 950;
+}
+.trend-winner b {
+  color: #111827;
+}
+.trend-winner em {
+  font-style: normal;
+  color: #c2410c;
+  font-weight: 900;
+}
+@media (max-width: 1050px) {
+  .trend-kpis,
+  .trend-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .trend-head,
+  .trend-winner {
+    display: block;
+  }
+  .trend-rating {
+    text-align: left;
+    margin-top: 10px;
+  }
+  .trend-kpis,
+  .trend-grid,
+  .trend-pills {
+    grid-template-columns: 1fr;
+  }
+}

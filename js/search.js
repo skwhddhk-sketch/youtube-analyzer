@@ -28,7 +28,7 @@ async function runSearch() {
 
   if (demo) {
     let vs = seed(q, c, shorts).slice(0, 12);
-    resultEl.innerHTML = table(vs);
+    resultEl.innerHTML = renderTrendReport(q || 'Demo', vs) + table(vs);
     return;
   }
 
@@ -49,7 +49,7 @@ async function runSearch() {
     const notice = result.fromCache
       ? `<div class="cache-note">캐시 결과 사용 · ${cacheAgeLabel(result.cacheAge)}${result.expired ? ' · 만료 캐시' : ''}${result.error ? ' · API 실패로 캐시 대체' : ''}</div>`
       : '<div class="cache-note">새 API 검색 결과 · 캐시에 저장됨</div>';
-    resultEl.innerHTML = notice + table(vs);
+    resultEl.innerHTML = notice + renderTrendReport(q, vs) + table(vs);
     toast(result.fromCache ? `캐시 검색 ${vs.length}개 로드됨` : `실제 검색 ${vs.length}개 로드됨`);
   } catch (err) {
     console.error(err);
