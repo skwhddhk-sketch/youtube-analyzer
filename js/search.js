@@ -21,10 +21,32 @@ async function runSearch() {
   let q = qs("#searchQ").value.trim();
   let c = qs("#searchCountry").value;
   let shorts = qs("#searchShorts").checked;
-  if (!demo && !API) {
-    toast("API 키가 필요함");
+  const resultEl = qs("#searchResult");
+
+  if (demo) {
+    let vs = seed(q, c, shorts).slice(0, 12);
+    resultEl.innerHTML = table(vs);
     return;
   }
-  let vs = seed(q, c, shorts).slice(0, 12);
-  qs("#searchResult").innerHTML = table(vs);
+
+  if (!API) {
+    toast("API 키를 저장하거나 Demo ON으로 전환해줘");
+    return;
+  }
+
+  if (!q) {
+    toast("검색어를 입력해줘");
+    return;
+  }
+
+  try {
+    resultEl.innerHTML = '<div class="empty">YouTube API 검색 중...</div>';
+    const vs = await searchYouTubeVideos(q, c, shorts);
+    resultEl.innerHTML = table(vs);
+    toast(`실제 검색 ${vs.length}개 로드됨`);
+  } catch (err) {
+    console.error(err);
+    resultEl.innerHTML = `<div class="empty">API 검색 실패: ${err.message}</div>`;
+    toast("API 검색 실패");
+  }
 }
