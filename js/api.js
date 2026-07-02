@@ -154,3 +154,115 @@ async function searchYouTubeVideos(query, country = 'GLOBAL', includeShorts = tr
     .sort((a, b) => b.score - a.score)
     .slice(0, 20);
 }
+
+
+// Lightweight client-side cache to save YouTube API quota.
+const VR_CACHE_PREFIX = 'vr_search_cache_v1:';
+const VR_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+
+function normalizeCachePart(value) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function makeSearchCacheKey(query, country, includeShorts, options = {}) {
+  return (
+    VR_CACHE_PREFIX +
+    JSON.stringify({
+      q: normalizeCachePart(query),
+      country: country || 'GLOBAL',
+      shorts: !!includeShorts,
+      order: options.order || 'date',
+      noise: !!options.excludeNoise,
+    })
+  );
+}
+
+function readSearchCache(query, country, includeShorts, options = {}, allowExpired = false) {
+  try {
+    const raw = localStorage.getItem(makeSearchCacheKey(query, country, includeShorts, options));
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (!cached || !Array.isArray(cached.items)) return null;
+    const age = Date.now() - Number(cached.savedAt || 0);
+    if (!allowExpired && age > VR_CACHE_TTL_MS) return null;
+    return {
+      ...cached,
+      age,
+      expired: age > VR_CACHE_TTL_MS,
+    };
+  } catch (err) {
+    console.warn('캐시 읽기 실패', err);
+    return null;
+  }
+}
+
+function writeSearchCache(query, country, includeShorts, options = {}, items = []) {
+  try {
+    const payload = {
+      savedAt: Date.now(),
+      query,
+      country,
+      includeShorts,
+      options,
+      items,
+    };
+    localStorage.setItem(
+      makeSearchCacheKey(query, country, includeShorts, options),
+      JSON.stringify(payload),
+    );
+  } catch (err) {
+    console.warn('캐시 저장 실패', err);
+  }
+}
+
+function clearSearchCache() {
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith(VR_CACHE_PREFIX))
+    .forEach((key) => localStorage.removeItem(key));
+}
+
+function cacheAgeLabel(ageMs) {
+  const minutes = Math.max(0, Math.round(Number(ageMs || 0) / 60000));
+  if (minutes < 1) return '방금 전';
+  if (minutes < 60) return `${minutes}분 전`;
+  return `${Math.round(minutes / 60)}시간 전`;
+}
+
+async function searchYouTubeVideosCached(query, country = 'GLOBAL', includeShorts = true, options = {}) {
+  const useCache = options.useCache !== false;
+
+  if (useCache) {
+    const cached = readSearchCache(query, country, includeShorts, options);
+    if (cached) {
+      return {
+        items: cached.items.map((v) => calc({ ...v })),
+        fromCache: true,
+        cacheAge: cached.age,
+        expired: false,
+      };
+    }
+  }
+
+  try {
+    const items = await searchYouTubeVideos(query, country, includeShorts, options);
+    writeSearchCache(query, country, includeShorts, options, items);
+    return {
+      items,
+      fromCache: false,
+      cacheAge: 0,
+      expired: false,
+    };
+  } catch (err) {
+    const fallback = readSearchCache(query, country, includeShorts, options, true);
+    if (fallback) {
+      return {
+        items: fallback.items.map((v) => calc({ ...v })),
+        fromCache: true,
+        cacheAge: fallback.age,
+        expired: fallback.expired,
+        error: err,
+      };
+    }
+    throw err;
+  }
+}

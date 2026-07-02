@@ -558,3 +558,5 @@ body {
     min-width: 100%;
   }
 }
+
+.cache-note{margin:10px 0 12px;color:var(--muted);font-size:12px;font-weight:800}
